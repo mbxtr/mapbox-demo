@@ -554,32 +554,10 @@ function setMode(m) {
   el('tour-speed').classList.toggle('hidden', m !== 'touring');
 }
 
-// ── Bootstrap & token gate ────────────────────────────────────────────────────
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 function bootstrap() {
-  const saved = localStorage.getItem('mapbox_token');
-  if (saved) {
-    initMap(saved);
-    return;
-  }
-
-  const overlay = document.getElementById('token-overlay');
-  overlay.classList.remove('hidden');
-
-  function submit() {
-    const val = document.getElementById('token-input').value.trim();
-    const errEl = document.getElementById('token-error');
-    if (!val) { errEl.textContent = 'Please enter a token.'; return; }
-    if (!val.startsWith('pk.')) { errEl.textContent = 'Public tokens start with "pk.".'; return; }
-    localStorage.setItem('mapbox_token', val);
-    overlay.classList.add('hidden');
-    initMap(val);
-  }
-
-  document.getElementById('token-submit').addEventListener('click', submit);
-  document.getElementById('token-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submit();
-  });
+  initMap('pk.eyJ1IjoibWJ4dHIiLCJhIjoiY2p1MjE3b3IxMDQzMzQ0bzZic3JnZ3BzeSJ9.DXMOudIzUmXJGu8YayWK3g');
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────
