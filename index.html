@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Street Route Explorer</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="map"></div>
+
+    <aside id="sidebar">
+      <header id="header">
+        <h1>Street Route Explorer</h1>
+        <p class="subtitle">Draw · Snap · Tour</p>
+      </header>
+
+      <div id="controls">
+        <button id="draw-btn" class="btn primary" disabled>Draw Route</button>
+        <button id="clear-btn" class="btn secondary" disabled>Clear</button>
+      </div>
+
+      <div id="status">
+        <div id="spinner" class="spinner hidden"></div>
+        <p id="status-text">Loading map…</p>
+      </div>
+
+      <div id="route-info" class="hidden">
+        <div class="info-cell">
+          <div class="info-label">Distance</div>
+          <div class="info-value" id="distance">—</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Est. Walk</div>
+          <div class="info-value" id="duration">—</div>
+        </div>
+      </div>
+
+      <div id="directions-panel" class="hidden">
+        <h2>Turn-by-Turn</h2>
+        <ol id="directions-list"></ol>
+      </div>
+
+      <div id="tour-controls" class="hidden">
+        <button id="tour-btn" class="btn primary">&#9658; Start Tour</button>
+        <div id="tour-speed" class="hidden">
+          <div class="speed-row">
+            <span>Speed: <strong id="speed-label">1&times;</strong></span>
+          </div>
+          <input type="range" id="speed-slider" min="1" max="5" value="1" step="1">
+          <button id="stop-tour-btn" class="btn secondary">&#9632; Stop Tour</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="token-overlay" class="hidden">
+    <div class="token-card">
+      <div class="token-logo">&#128506;</div>
+      <h2>Mapbox Access Token</h2>
+      <p>
+        Enter your Mapbox public token to get started. Get one free at
+        <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer">account.mapbox.com</a>.
+      </p>
+      <input
+        type="text"
+        id="token-input"
+        class="token-input"
+        placeholder="pk.eyJ1…"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <p id="token-error" class="token-error"></p>
+      <button id="token-submit" class="btn primary">Get Started</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
