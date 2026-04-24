@@ -22,6 +22,7 @@ const state = {
   tourLastTime: null,
   tourAnimFrame: null,
   tourSpeed: 0,
+  elevationSamples: null,
 };
 
 // ── Map globals ───────────────────────────────────────────────────────────────
@@ -393,6 +394,7 @@ async function snapRoute() {
       new mapboxgl.LngLatBounds(allCoords[0], allCoords[0])
     );
     map.fitBounds(bounds, { padding: 60, pitch: 0, bearing: 0, duration: 1000 });
+    map.once('idle', renderElevationChart);
 
     setMode('ready');
     renderRouteInfo(totalDist, totalDur);
@@ -403,6 +405,72 @@ async function snapRoute() {
     showError(err.message);
     setMode('idle');
   }
+}
+
+// ── Elevation profile ─────────────────────────────────────────────────────────
+
+function sampleElevations(n = 100) {
+  return Array.from({ length: n }, (_, i) => {
+    const d   = (i / (n - 1)) * state.totalDist;
+    const pos = posAtDist(state.snappedCoords, state.cumDists, d);
+    return map.queryTerrainElevation(pos) ?? null;
+  });
+}
+
+function renderElevationChart() {
+  const overlay = document.getElementById('elevation-overlay');
+  const W = overlay.clientWidth;
+  const H = 72;
+
+  const raw = sampleElevations(100);
+  const nulls = raw.filter(e => e === null).length;
+  if (nulls > raw.length * 0.3) return; // not enough terrain data loaded
+
+  const elevs = raw.map(e => e ?? 0);
+  const min   = Math.min(...elevs);
+  const max   = Math.max(...elevs);
+  if (max - min < 1) return; // perfectly flat — chart adds no info
+
+  const pad = 6;
+  const toX = i  => (i / (elevs.length - 1)) * W;
+  const toY = el => H - pad - ((el - min) / (max - min)) * (H - pad * 2);
+
+  const pts      = elevs.map((el, i) => [toX(i), toY(el)]);
+  const linePath = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join('');
+  const areaPath = `${linePath}L${W},${H}L0,${H}Z`;
+
+  overlay.innerHTML = `
+    <svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#60a5fa" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.04"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#eg)"/>
+      <path d="${linePath}" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-linejoin="round"/>
+      <line id="elev-cursor" x1="0" y1="0" x2="0" y2="${H}"
+            stroke="white" stroke-width="1.5" stroke-dasharray="3,2" opacity="0"/>
+    </svg>`;
+
+  state.elevationSamples = elevs;
+  overlay.classList.remove('hidden');
+}
+
+function updateElevationCursor(dist) {
+  const cursor = document.getElementById('elev-cursor');
+  if (!cursor || !state.elevationSamples) return;
+  const x = ((dist / state.totalDist) * cursor.closest('svg').clientWidth).toFixed(1);
+  cursor.setAttribute('x1', x);
+  cursor.setAttribute('x2', x);
+  cursor.setAttribute('opacity', '0.85');
+}
+
+function clearElevationChart() {
+  state.elevationSamples = null;
+  const overlay = document.getElementById('elevation-overlay');
+  overlay.innerHTML = '';
+  overlay.classList.add('hidden');
 }
 
 // ── Directions rendering ──────────────────────────────────────────────────────
@@ -516,6 +584,7 @@ function runTour() {
     map.jumpTo({ center: pos, bearing: brng, pitch: TOUR_PITCH, zoom: TOUR_ZOOM });
     map.getSource('marker').setData(pointGJ(pos));
     highlightStep(activeStepAt(d));
+    updateElevationCursor(d);
 
     if (d < state.totalDist) {
       state.tourAnimFrame = requestAnimationFrame(tick);
@@ -577,6 +646,7 @@ function clearAll() {
 
   document.getElementById('directions-list').innerHTML = '';
   document.querySelectorAll('.speed-seg').forEach((el, i) => el.classList.toggle('active', i === 0));
+  clearElevationChart();
 
   setMode('idle');
 }
