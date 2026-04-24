@@ -367,9 +367,16 @@ async function snapRoute() {
       );
     }
 
-    // Stitch all matchings — the API splits when a point is too far from any road
+    // Stitch all matchings — strip intermediate arrive/depart bookends
     const allCoords = json.matchings.flatMap(m => m.geometry.coordinates);
-    const allSteps  = json.matchings.flatMap(m => m.legs.flatMap(l => l.steps));
+    const allSteps  = json.matchings.flatMap((m, mi) => {
+      const steps = m.legs.flatMap(l => l.steps);
+      return steps.filter((s, si) => {
+        if (mi > 0 && si === 0 && s.maneuver.type === 'depart') return false;
+        if (mi < json.matchings.length - 1 && si === steps.length - 1 && s.maneuver.type === 'arrive') return false;
+        return true;
+      });
+    });
     const totalDist = json.matchings.reduce((s, m) => s + m.distance, 0);
     const totalDur  = json.matchings.reduce((s, m) => s + m.duration, 0);
 
