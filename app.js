@@ -421,7 +421,7 @@ function sampleElevations(n = 100) {
 
 function renderElevationChart() {
   const overlay = document.getElementById('elevation-overlay');
-  const W = overlay.clientWidth;
+  const W = map.getContainer().clientWidth;  // measure before unhiding (clientWidth is 0 while hidden)
   const H = 72;
 
   const raw = sampleElevations(100);
