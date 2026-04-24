@@ -1,6 +1,9 @@
 /* ── Reset & base ─────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   font-size: 14px;
@@ -8,57 +11,77 @@ body {
   color: #e2e8f0;
 }
 
-/* ── Layout ───────────────────────────────────────────────────────────────── */
-#app { display: flex; height: 100vh; }
-#map { flex: 1; }
-
-/* ── Sidebar ──────────────────────────────────────────────────────────────── */
-#sidebar {
-  width: 340px;
-  min-width: 340px;
-  display: flex;
-  flex-direction: column;
-  background: #0f172a;
-  border-left: 1px solid rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-  z-index: 1;
+/* ── Layout: map fills everything ─────────────────────────────────────────── */
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+}
+#map {
+  position: absolute;
+  inset: 0;
 }
 
-/* ── Header ───────────────────────────────────────────────────────────────── */
-#header {
-  padding: 20px 20px 16px;
-  background: linear-gradient(160deg, #1e3a5f 0%, #0f172a 100%);
+/* ── Bottom sheet ─────────────────────────────────────────────────────────── */
+#sidebar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
+  max-height: 65vh;
+  /* pushes content above home indicator on iOS */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow: hidden;
+}
+
+/* ── Drag handle ──────────────────────────────────────────────────────────── */
+#drag-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+/* ── Sheet header ─────────────────────────────────────────────────────────── */
+#sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
 }
-#header h1 {
-  font-size: 1.15rem;
+#header-title h1 {
+  font-size: 1.05rem;
   font-weight: 700;
   color: #e2e8f0;
   letter-spacing: -0.02em;
 }
-#header .subtitle {
-  font-size: 0.72rem;
+#header-title .subtitle {
+  font-size: 0.68rem;
   color: #475569;
-  margin-top: 3px;
+  margin-top: 2px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
-#controls {
-  display: flex;
-  gap: 8px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
-}
 .btn {
-  flex: 1;
-  padding: 9px 14px;
+  padding: 9px 16px;
   border: none;
-  border-radius: 8px;
-  font-size: 0.82rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, opacity 0.15s, transform 0.1s;
@@ -70,15 +93,17 @@ body {
 .btn.primary:hover:not(:disabled) { background: #2563eb; }
 .btn.secondary { background: rgba(255, 255, 255, 0.08); color: #94a3b8; }
 .btn.secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.13); color: #e2e8f0; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.btn-full { width: 100%; }
 
 /* ── Status bar ───────────────────────────────────────────────────────────── */
 #status {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  min-height: 42px;
+  min-height: 38px;
   flex-shrink: 0;
 }
 #status-text { font-size: 0.78rem; color: #64748b; line-height: 1.4; }
@@ -104,7 +129,7 @@ body {
 }
 .info-cell {
   flex: 1;
-  padding: 12px 16px;
+  padding: 10px 16px;
   text-align: center;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -119,20 +144,19 @@ body {
   font-size: 1rem;
   font-weight: 700;
   color: #e2e8f0;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
-/* ── Directions panel ─────────────────────────────────────────────────────── */
+/* ── Directions panel (scrollable middle section) ─────────────────────────── */
 #directions-panel {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 0 4px;
+  padding: 10px 0 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 #directions-panel::-webkit-scrollbar { width: 4px; }
 #directions-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-
 #directions-panel h2 {
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -170,19 +194,24 @@ body {
 .step.active .step-text { color: #e2e8f0; }
 .step-dist { font-size: 0.7rem; color: #475569; }
 
-/* ── Tour controls ────────────────────────────────────────────────────────── */
-#tour-controls {
-  padding: 14px 16px;
+/* ── Action footer (always at bottom of sheet) ────────────────────────────── */
+#action-footer {
+  padding: 12px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: 8px;
+}
+#tour-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 #tour-speed {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 .speed-row {
   font-size: 0.78rem;
@@ -195,9 +224,10 @@ input[type="range"] {
   cursor: pointer;
 }
 
-
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
 /* ── Mapbox overrides ─────────────────────────────────────────────────────── */
 .mapboxgl-ctrl-group { border-radius: 8px !important; overflow: hidden; }
+/* Keep attribution above the sheet */
+.mapboxgl-ctrl-bottom-right { bottom: 68px !important; }

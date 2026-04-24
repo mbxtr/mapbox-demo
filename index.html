@@ -13,14 +13,14 @@
     <div id="map"></div>
 
     <aside id="sidebar">
-      <header id="header">
-        <h1>Street Route Explorer</h1>
-        <p class="subtitle">Draw · Snap · Tour</p>
-      </header>
+      <div id="drag-handle"></div>
 
-      <div id="controls">
-        <button id="draw-btn" class="btn primary" disabled>Draw Route</button>
-        <button id="clear-btn" class="btn secondary" disabled>Clear</button>
+      <div id="sheet-header">
+        <div id="header-title">
+          <h1>Street Route Explorer</h1>
+          <p class="subtitle">Draw · Snap · Tour</p>
+        </div>
+        <button id="clear-btn" class="btn secondary btn-sm" disabled>Clear</button>
       </div>
 
       <div id="status">
@@ -44,19 +44,22 @@
         <ol id="directions-list"></ol>
       </div>
 
-      <div id="tour-controls" class="hidden">
-        <button id="tour-btn" class="btn primary">&#9658; Start Tour</button>
-        <div id="tour-speed" class="hidden">
-          <div class="speed-row">
-            <span>Speed: <strong id="speed-label">1&times;</strong></span>
+      <div id="action-footer">
+        <button id="draw-btn" class="btn primary btn-full" disabled>Draw Route</button>
+        <div id="tour-controls" class="hidden">
+          <button id="tour-btn" class="btn primary btn-full">&#9658; Start Tour</button>
+          <div id="tour-speed" class="hidden">
+            <div class="speed-row">
+              <span>Speed: <strong id="speed-label">1&times;</strong></span>
+            </div>
+            <input type="range" id="speed-slider" min="1" max="5" value="1" step="1">
+            <button id="stop-tour-btn" class="btn secondary btn-full">&#9632; Stop Tour</button>
           </div>
-          <input type="range" id="speed-slider" min="1" max="5" value="1" step="1">
-          <button id="stop-tour-btn" class="btn secondary">&#9632; Stop Tour</button>
         </div>
       </div>
     </aside>
   </div>
 
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

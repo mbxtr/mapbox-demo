@@ -545,6 +545,7 @@ function setMode(m) {
 
   el('draw-btn').disabled = ['drawing', 'snapping', 'touring'].includes(m);
   el('draw-btn').textContent = m === 'drawing' ? 'Drawing…' : 'Draw Route';
+  el('draw-btn').classList.toggle('hidden', m === 'touring');
   el('clear-btn').disabled = ['idle', 'drawing', 'snapping'].includes(m);
 
   el('route-info').classList.toggle('hidden', !show);
