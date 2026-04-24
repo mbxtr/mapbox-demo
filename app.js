@@ -1,7 +1,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MATCH_API      = 'https://api.mapbox.com/matching/v5/mapbox/walking';
-const MAX_MATCH_PTS  = 90;     // Map Matching API limit is 100; stay under it
+const MAX_MATCH_PTS  = 100;    // Map Matching API limit
 const MIN_PX_GAP     = 10;     // px between sampled draw points
 const TOUR_ZOOM      = 17.5;
 const TOUR_PITCH     = 65;
@@ -201,6 +201,42 @@ function sampleUniform(pts, n) {
   return Array.from({ length: n }, (_, i) => pts[Math.round(i * step)]);
 }
 
+// Perpendicular distance in metres from pt to segment [a, b]
+function ptToSegDist(pt, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  if (dx === 0 && dy === 0) return haversine(pt, a);
+  const t = Math.max(0, Math.min(1, ((pt[0] - a[0]) * dx + (pt[1] - a[1]) * dy) / (dx * dx + dy * dy)));
+  return haversine(pt, [a[0] + t * dx, a[1] + t * dy]);
+}
+
+// Ramer-Douglas-Peucker simplification, epsilon in metres
+function rdp(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  let maxD = 0, maxI = 0;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const d = ptToSegDist(pts[i], pts[0], pts[pts.length - 1]);
+    if (d > maxD) { maxD = d; maxI = i; }
+  }
+  if (maxD > eps) {
+    const l = rdp(pts.slice(0, maxI + 1), eps);
+    const r = rdp(pts.slice(maxI), eps);
+    return [...l.slice(0, -1), ...r];
+  }
+  return [pts[0], pts[pts.length - 1]];
+}
+
+// Binary-search for the largest epsilon that keeps point count <= maxN
+function rdpToLimit(pts, maxN) {
+  if (pts.length <= maxN) return pts;
+  let lo = 0, hi = 500;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    rdp(pts, mid).length > maxN ? (lo = mid) : (hi = mid);
+  }
+  const result = rdp(pts, hi);
+  return result.length <= maxN ? result : sampleUniform(result, maxN);
+}
+
 function fmtDist(m) {
   const miles = m / 1609.344;
   return miles >= 0.1 ? `${miles.toFixed(2)} mi` : `${Math.round(m * 3.28084)} ft`;
@@ -305,10 +341,13 @@ function onTouchEnd() {
 async function snapRoute() {
   setMode('snapping');
 
-  const sampled = sampleUniform(state.rawPoints, MAX_MATCH_PTS)
-    .filter(([lng, lat]) => isFinite(lng) && isFinite(lat));
+  const waypoints = rdpToLimit(
+    state.rawPoints.filter(([lng, lat]) => isFinite(lng) && isFinite(lat)),
+    MAX_MATCH_PTS
+  );
 
-  const coordPath = sampled.map(([lng, lat]) => `${lng},${lat}`).join(';');
+  const coordPath = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(';');
+  const radii     = waypoints.map(() => 25).join(';');
 
   try {
     const params = new URLSearchParams({
@@ -316,10 +355,10 @@ async function snapRoute() {
       steps: 'true',
       geometries: 'geojson',
       overview: 'full',
-      tidy: 'true',
+      radiuses: radii,
     });
 
-    const res = await fetch(`${MATCH_API}/${coordPath}?${params}`);
+    const res  = await fetch(`${MATCH_API}/${coordPath}?${params}`);
     const json = await res.json();
 
     if (json.code !== 'Ok' || !json.matchings?.length) {
@@ -328,24 +367,29 @@ async function snapRoute() {
       );
     }
 
-    const m = json.matchings[0];
-    state.snappedCoords = m.geometry.coordinates;
-    state.cumDists = buildCumDists(state.snappedCoords);
-    state.totalDist = state.cumDists[state.cumDists.length - 1];
-    state.steps = m.legs.flatMap(l => l.steps);
+    // Stitch all matchings — the API splits when a point is too far from any road
+    const allCoords = json.matchings.flatMap(m => m.geometry.coordinates);
+    const allSteps  = json.matchings.flatMap(m => m.legs.flatMap(l => l.steps));
+    const totalDist = json.matchings.reduce((s, m) => s + m.distance, 0);
+    const totalDur  = json.matchings.reduce((s, m) => s + m.duration, 0);
+
+    state.snappedCoords = allCoords;
+    state.cumDists      = buildCumDists(allCoords);
+    state.totalDist     = state.cumDists[state.cumDists.length - 1];
+    state.steps         = allSteps;
 
     map.getSource('drawn').setData(nullGJ());
-    map.getSource('snapped').setData(lineGJ(state.snappedCoords));
+    map.getSource('snapped').setData(lineGJ(allCoords));
 
-    const bounds = state.snappedCoords.reduce(
+    const bounds = allCoords.reduce(
       (b, c) => b.extend(c),
-      new mapboxgl.LngLatBounds(state.snappedCoords[0], state.snappedCoords[0])
+      new mapboxgl.LngLatBounds(allCoords[0], allCoords[0])
     );
     map.fitBounds(bounds, { padding: 60, pitch: 0, bearing: 0, duration: 1000 });
 
     setMode('ready');
-    renderRouteInfo(m.distance, m.duration);
-    renderDirections(state.steps);
+    renderRouteInfo(totalDist, totalDur);
+    renderDirections(allSteps);
 
   } catch (err) {
     map.getSource('drawn').setData(nullGJ());
