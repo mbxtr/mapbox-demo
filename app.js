@@ -202,7 +202,8 @@ function sampleUniform(pts, n) {
 }
 
 function fmtDist(m) {
-  return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
+  const miles = m / 1609.344;
+  return miles >= 0.1 ? `${miles.toFixed(2)} mi` : `${Math.round(m * 3.28084)} ft`;
 }
 
 function fmtTime(s) {
@@ -527,7 +528,7 @@ function clearAll() {
 
 const STATUS_MSG = {
   idle:     'Click "Draw Route" then drag on the map to trace your path.',
-  drawing:  'Drag to draw your route. Release the mouse to snap to roads.',
+  drawing:  'Drag to draw your route.',
   snapping: 'Snapping route to roads…',
   ready:    'Route ready! Start the tour or draw a new one.',
   touring:  'Tour in progress…',
