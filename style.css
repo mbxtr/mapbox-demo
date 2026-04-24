@@ -33,6 +33,7 @@ body {
   padding: 16px 16px 40px;
   background: linear-gradient(to bottom, rgba(15, 23, 42, 0.75) 0%, transparent 100%);
   pointer-events: none;
+  text-align: center;
 }
 #map-title h1 {
   font-size: 1.1rem;

@@ -553,7 +553,7 @@ function setMode(m) {
 
   el('draw-btn').disabled = ['drawing', 'snapping', 'touring'].includes(m);
   el('draw-btn').textContent = m === 'drawing' ? 'Drawing…' : 'Draw Route';
-  el('draw-btn').classList.toggle('hidden', touring);
+  el('draw-btn').classList.toggle('hidden', touring || m === 'ready');
   el('clear-btn').disabled = ['idle', 'drawing', 'snapping'].includes(m);
 
   // During tour: collapse sheet to current-step only
