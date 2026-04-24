@@ -387,7 +387,7 @@ async function snapRoute() {
     state.snappedCoords = allCoords;
     state.cumDists      = buildCumDists(allCoords);
     state.totalDist     = state.cumDists[state.cumDists.length - 1];
-    state.steps         = allSteps;
+    state.steps         = consolidateSteps(allSteps);
 
     map.getSource('drawn').setData(nullGJ());
     map.getSource('snapped').setData(lineGJ(allCoords));
@@ -401,7 +401,7 @@ async function snapRoute() {
 
     setMode('ready');
     renderRouteInfo(totalDist, totalDur);
-    renderDirections(allSteps);
+    renderDirections(state.steps);
 
   } catch (err) {
     map.getSource('drawn').setData(nullGJ());
@@ -524,6 +524,31 @@ function stepIcon(type, modifier) {
 function renderRouteInfo(dist, dur) {
   document.getElementById('distance').textContent = fmtDist(dist);
   document.getElementById('duration').textContent = fmtTime(dur);
+}
+
+function consolidateSteps(steps) {
+  const MIN_DIST = 25;
+  const out = [];
+  for (const s of steps) {
+    const isBookend = s.maneuver.type === 'depart' || s.maneuver.type === 'arrive';
+    const prev = out.length > 0 ? out[out.length - 1] : null;
+    const prevIsBookend = prev && (prev.maneuver.type === 'depart' || prev.maneuver.type === 'arrive');
+
+    if (!isBookend && prev && !prevIsBookend) {
+      const sameName = s.name && s.name === prev.name;
+      const tinyStep = s.distance < MIN_DIST;
+      if (sameName || tinyStep) {
+        out[out.length - 1] = {
+          ...prev,
+          distance: prev.distance + s.distance,
+          duration: (prev.duration || 0) + (s.duration || 0),
+        };
+        continue;
+      }
+    }
+    out.push({ ...s });
+  }
+  return out;
 }
 
 function renderDirections(steps) {
