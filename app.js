@@ -23,6 +23,7 @@ const state = {
   tourAnimFrame: null,
   tourSpeed: 0,
   elevationSamples: null,
+  elevationPts: null,
 };
 
 // ── Map globals ───────────────────────────────────────────────────────────────
@@ -421,19 +422,33 @@ function sampleElevations(n = 100) {
 
 function renderElevationChart() {
   const overlay = document.getElementById('elevation-overlay');
-  const W = map.getContainer().clientWidth;  // measure before unhiding (clientWidth is 0 while hidden)
+  const W = map.getContainer().clientWidth;
   const H = 72;
 
   const raw = sampleElevations(100);
   const nulls = raw.filter(e => e === null).length;
-  if (nulls > raw.length * 0.3) return; // not enough terrain data loaded
+  if (nulls > raw.length * 0.3) return;
 
-  const elevs = raw.map(e => e ?? 0);
-  const min   = Math.min(...elevs);
-  const max   = Math.max(...elevs);
-  const pad = 6;
-  const toX = i  => (i / (elevs.length - 1)) * W;
-  const toY = el => H - pad - ((el - min) / (max - min)) * (H - pad * 2);
+  // Smooth with a moving average to remove noise spikes
+  const window = 9;
+  const elevs = raw.map((_, i) => {
+    const lo = Math.max(0, i - Math.floor(window / 2));
+    const hi = Math.min(raw.length, i + Math.ceil(window / 2));
+    const slice = raw.slice(lo, hi).map(e => e ?? 0);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+
+  const min = Math.min(...elevs);
+  const max = Math.max(...elevs);
+  // Pad the range so the chart doesn't exaggerate small variations
+  const range   = max - min || 1;
+  const yMin    = min - range * 1.5;
+  const yMax    = max + range * 0.4;
+  const yRange  = yMax - yMin;
+
+  const vpad  = 6;
+  const toX   = i  => (i / (elevs.length - 1)) * W;
+  const toY   = el => H - vpad - ((el - yMin) / yRange) * (H - vpad * 2);
 
   const pts      = elevs.map((el, i) => [toX(i), toY(el)]);
   const linePath = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join('');
@@ -449,25 +464,32 @@ function renderElevationChart() {
       </defs>
       <path d="${areaPath}" fill="url(#eg)"/>
       <path d="${linePath}" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-linejoin="round"/>
-      <line id="elev-cursor" x1="0" y1="0" x2="0" y2="${H}"
-            stroke="white" stroke-width="1.5" stroke-dasharray="3,2" opacity="0"/>
+      <circle id="elev-cursor" cx="0" cy="0" r="4"
+              fill="#3b82f6" stroke="white" stroke-width="1.5" opacity="0"/>
     </svg>`;
 
   state.elevationSamples = elevs;
+  state.elevationPts     = pts;
   overlay.classList.remove('hidden');
 }
 
 function updateElevationCursor(dist) {
-  const cursor = document.getElementById('elev-cursor');
-  if (!cursor || !state.elevationSamples) return;
-  const x = ((dist / state.totalDist) * cursor.closest('svg').clientWidth).toFixed(1);
-  cursor.setAttribute('x1', x);
-  cursor.setAttribute('x2', x);
-  cursor.setAttribute('opacity', '0.85');
+  const dot = document.getElementById('elev-cursor');
+  if (!dot || !state.elevationPts) return;
+  const idx = (dist / state.totalDist) * (state.elevationPts.length - 1);
+  const i0  = Math.floor(idx);
+  const i1  = Math.min(i0 + 1, state.elevationPts.length - 1);
+  const t   = idx - i0;
+  const x   = (state.elevationPts[i0][0] + t * (state.elevationPts[i1][0] - state.elevationPts[i0][0])).toFixed(1);
+  const y   = (state.elevationPts[i0][1] + t * (state.elevationPts[i1][1] - state.elevationPts[i0][1])).toFixed(1);
+  dot.setAttribute('cx', x);
+  dot.setAttribute('cy', y);
+  dot.setAttribute('opacity', '1');
 }
 
 function clearElevationChart() {
   state.elevationSamples = null;
+  state.elevationPts     = null;
   const overlay = document.getElementById('elevation-overlay');
   overlay.innerHTML = '';
   overlay.classList.add('hidden');
