@@ -373,8 +373,10 @@ async function snapRoute() {
     const allSteps  = json.matchings.flatMap((m, mi) => {
       const steps = m.legs.flatMap(l => l.steps);
       return steps.filter((s, si) => {
-        if (mi > 0 && si === 0 && s.maneuver.type === 'depart') return false;
-        if (mi < json.matchings.length - 1 && si === steps.length - 1 && s.maneuver.type === 'arrive') return false;
+        const isFirst = mi === 0 && si === 0;
+        const isLast  = mi === json.matchings.length - 1 && si === steps.length - 1;
+        if (s.maneuver.type === 'depart' && !isFirst) return false;
+        if (s.maneuver.type === 'arrive' && !isLast)  return false;
         return true;
       });
     });
@@ -429,8 +431,6 @@ function renderElevationChart() {
   const elevs = raw.map(e => e ?? 0);
   const min   = Math.min(...elevs);
   const max   = Math.max(...elevs);
-  if (max - min < 1) return; // perfectly flat — chart adds no info
-
   const pad = 6;
   const toX = i  => (i / (elevs.length - 1)) * W;
   const toY = el => H - pad - ((el - min) / (max - min)) * (H - pad * 2);
