@@ -12,14 +12,15 @@
   <div id="app">
     <div id="map"></div>
 
+    <div id="map-title">
+      <h1>Street Route Explorer</h1>
+      <p class="subtitle">Draw · Snap · Tour</p>
+    </div>
+
     <aside id="sidebar">
       <div id="drag-handle"></div>
 
       <div id="sheet-header">
-        <div id="header-title">
-          <h1>Street Route Explorer</h1>
-          <p class="subtitle">Draw · Snap · Tour</p>
-        </div>
         <button id="clear-btn" class="btn secondary btn-sm" disabled>Clear</button>
       </div>
 
@@ -42,6 +43,14 @@
       <div id="directions-panel" class="hidden">
         <h2>Turn-by-Turn</h2>
         <ol id="directions-list"></ol>
+      </div>
+
+      <div id="current-step" class="hidden">
+        <span id="current-step-icon" class="step-icon"></span>
+        <div class="step-body">
+          <span id="current-step-text" class="step-text"></span>
+          <span id="current-step-dist" class="step-dist"></span>
+        </div>
       </div>
 
       <div id="action-footer">

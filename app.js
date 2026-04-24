@@ -396,6 +396,13 @@ function highlightStep(i) {
     el.classList.toggle('active', active);
     if (active) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
+
+  const s = state.steps[i];
+  if (s) {
+    document.getElementById('current-step-icon').textContent = stepIcon(s.maneuver.type, s.maneuver.modifier);
+    document.getElementById('current-step-text').textContent = s.maneuver.instruction;
+    document.getElementById('current-step-dist').textContent = s.distance > 0 ? fmtDist(s.distance) : '';
+  }
 }
 
 function activeStepAt(dist) {
@@ -537,6 +544,7 @@ function setMode(m) {
   state.mode = m;
 
   const el = id => document.getElementById(id);
+  const touring = m === 'touring';
   const show = ['ready', 'touring'].includes(m);
 
   el('status-text').textContent = STATUS_MSG[m] ?? '';
@@ -545,14 +553,19 @@ function setMode(m) {
 
   el('draw-btn').disabled = ['drawing', 'snapping', 'touring'].includes(m);
   el('draw-btn').textContent = m === 'drawing' ? 'Drawing…' : 'Draw Route';
-  el('draw-btn').classList.toggle('hidden', m === 'touring');
+  el('draw-btn').classList.toggle('hidden', touring);
   el('clear-btn').disabled = ['idle', 'drawing', 'snapping'].includes(m);
 
-  el('route-info').classList.toggle('hidden', !show);
-  el('directions-panel').classList.toggle('hidden', !show);
+  // During tour: collapse sheet to current-step only
+  el('sheet-header').classList.toggle('hidden', touring);
+  el('status').classList.toggle('hidden', touring);
+  el('route-info').classList.toggle('hidden', !show || touring);
+  el('directions-panel').classList.toggle('hidden', !show || touring);
+  el('current-step').classList.toggle('hidden', !touring);
+
   el('tour-controls').classList.toggle('hidden', !show);
-  el('tour-btn').classList.toggle('hidden', m === 'touring');
-  el('tour-speed').classList.toggle('hidden', m !== 'touring');
+  el('tour-btn').classList.toggle('hidden', touring);
+  el('tour-speed').classList.toggle('hidden', !touring);
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
