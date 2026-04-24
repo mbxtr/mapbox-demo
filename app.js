@@ -337,6 +337,12 @@ async function snapRoute() {
     map.getSource('drawn').setData(nullGJ());
     map.getSource('snapped').setData(lineGJ(state.snappedCoords));
 
+    const bounds = state.snappedCoords.reduce(
+      (b, c) => b.extend(c),
+      new mapboxgl.LngLatBounds(state.snappedCoords[0], state.snappedCoords[0])
+    );
+    map.fitBounds(bounds, { padding: 60, pitch: 0, bearing: 0, duration: 1000 });
+
     setMode('ready');
     renderRouteInfo(m.distance, m.duration);
     renderDirections(state.steps);
