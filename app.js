@@ -518,8 +518,7 @@ function clearAll() {
   }
 
   document.getElementById('directions-list').innerHTML = '';
-  document.getElementById('speed-slider').value = 1;
-  document.getElementById('speed-label').textContent = SPEED_LABELS[0];
+  document.querySelectorAll('.speed-seg').forEach((el, i) => el.classList.toggle('active', i === 0));
 
   setMode('idle');
 }
@@ -589,9 +588,11 @@ document.getElementById('tour-btn').addEventListener('click', startTour);
 
 document.getElementById('stop-tour-btn').addEventListener('click', stopTour);
 
-document.getElementById('speed-slider').addEventListener('input', e => {
-  state.tourSpeed = Number(e.target.value) - 1;
-  document.getElementById('speed-label').textContent = SPEED_LABELS[state.tourSpeed];
+document.getElementById('speed-segments').addEventListener('click', e => {
+  const seg = e.target.closest('.speed-seg');
+  if (!seg) return;
+  state.tourSpeed = Number(seg.dataset.speed);
+  document.querySelectorAll('.speed-seg').forEach(el => el.classList.toggle('active', el === seg));
 });
 
 bootstrap();

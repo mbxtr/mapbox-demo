@@ -58,10 +58,14 @@
         <div id="tour-controls" class="hidden">
           <button id="tour-btn" class="btn primary btn-full">&#9658; Start Tour</button>
           <div id="tour-speed" class="hidden">
-            <div class="speed-row">
-              <span>Speed: <strong id="speed-label">1&times;</strong></span>
+            <div class="speed-row"><span>Speed</span></div>
+            <div id="speed-segments">
+              <button class="speed-seg active" data-speed="0">1&times;</button>
+              <button class="speed-seg" data-speed="1">2&times;</button>
+              <button class="speed-seg" data-speed="2">4&times;</button>
+              <button class="speed-seg" data-speed="3">8&times;</button>
+              <button class="speed-seg" data-speed="4">16&times;</button>
             </div>
-            <input type="range" id="speed-slider" min="1" max="5" value="1" step="1">
             <button id="stop-tour-btn" class="btn secondary btn-full">&#9632; Stop Tour</button>
           </div>
         </div>
