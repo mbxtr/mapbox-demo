@@ -11,16 +11,18 @@ body {
   color: #e2e8f0;
 }
 
-/* ── Layout: map fills everything ─────────────────────────────────────────── */
+/* ── Layout: map above, panel below ───────────────────────────────────────── */
 #app {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100vw;
   height: 100vh;
   height: 100dvh;
 }
 #map {
-  position: absolute;
-  inset: 0;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Map title overlay ────────────────────────────────────────────────────── */
@@ -50,35 +52,20 @@ body {
   text-transform: uppercase;
 }
 
-/* ── Bottom sheet ─────────────────────────────────────────────────────────── */
+/* ── Panel ────────────────────────────────────────────────────────────────── */
 #sidebar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
+  max-height: 55vh;
   display: flex;
   flex-direction: column;
-  background: rgba(15, 23, 42, 0.96);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 20px 20px 0 0;
+  background: #0f172a;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
-  max-height: 65vh;
-  /* pushes content above home indicator on iOS */
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow: hidden;
 }
 
-/* ── Drag handle ──────────────────────────────────────────────────────────── */
-#drag-handle {
-  width: 36px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
-  margin: 10px auto 0;
-  flex-shrink: 0;
-}
+#drag-handle { display: none; }
 
 /* ── Sheet header (clear button row) ──────────────────────────────────────── */
 #sheet-header {
@@ -289,5 +276,3 @@ body {
 
 /* ── Mapbox overrides ─────────────────────────────────────────────────────── */
 .mapboxgl-ctrl-group { border-radius: 8px !important; overflow: hidden; }
-/* Keep attribution above the sheet */
-.mapboxgl-ctrl-bottom-right { bottom: 68px !important; }
