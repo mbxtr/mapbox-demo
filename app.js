@@ -387,7 +387,10 @@ async function snapRoute() {
     state.snappedCoords = allCoords;
     state.cumDists      = buildCumDists(allCoords);
     state.totalDist     = state.cumDists[state.cumDists.length - 1];
-    state.steps         = consolidateSteps(allSteps);
+    state.steps         = consolidateSteps(allSteps).map(s => ({
+      ...s,
+      _routeDist: s.maneuver?.location ? nearestDistOnRoute(s.maneuver.location) : 0,
+    }));
 
     map.getSource('drawn').setData(nullGJ());
     map.getSource('snapped').setData(lineGJ(allCoords));
@@ -563,7 +566,7 @@ function renderDirections(steps) {
   `).join('');
 }
 
-function highlightStep(i) {
+function highlightStep(i, currentDist) {
   document.querySelectorAll('.step').forEach((el, j) => {
     const active = j === i;
     el.classList.toggle('active', active);
@@ -574,17 +577,43 @@ function highlightStep(i) {
   if (s) {
     document.getElementById('current-step-icon').textContent = stepIcon(s.maneuver.type, s.maneuver.modifier);
     document.getElementById('current-step-text').textContent = s.maneuver.instruction;
-    document.getElementById('current-step-dist').textContent = s.distance > 0 ? fmtDist(s.distance) : '';
+    const remaining = (s._routeDist ?? 0) - currentDist;
+    const isBookend = s.maneuver.type === 'depart' || s.maneuver.type === 'arrive';
+    document.getElementById('current-step-dist').textContent =
+      (!isBookend && remaining > 10) ? `in ${fmtDist(remaining)}` : '';
   }
 }
 
-function activeStepAt(dist) {
-  let acc = 0;
-  for (let i = 0; i < state.steps.length; i++) {
-    acc += state.steps[i].distance;
-    if (dist <= acc) return i;
+// Project a [lng, lat] point onto the snapped route, return its cumulative distance.
+function nearestDistOnRoute(lngLat) {
+  const coords = state.snappedCoords;
+  const dists  = state.cumDists;
+  let best = Infinity, bestD = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [x1, y1] = coords[i];
+    const [x2, y2] = coords[i + 1];
+    const [px, py] = lngLat;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2)) : 0;
+    const qx = x1 + t * dx, qy = y1 + t * dy;
+    const d2 = (px - qx) ** 2 + (py - qy) ** 2;
+    if (d2 < best) {
+      best = d2;
+      bestD = dists[i] + t * (dists[i + 1] - dists[i]);
+    }
   }
-  return state.steps.length - 1;
+  return bestD;
+}
+
+// Look-ahead: return the next upcoming step whose maneuver hasn't been reached yet.
+function activeStepAt(dist) {
+  const steps = state.steps;
+  if (dist < 5) return 0; // show depart briefly at the very start
+  for (let i = 1; i < steps.length; i++) {
+    if (dist < steps[i]._routeDist) return i;
+  }
+  return steps.length - 1; // arrive
 }
 
 // ── Tour ──────────────────────────────────────────────────────────────────────
@@ -630,7 +659,7 @@ function runTour() {
 
     map.jumpTo({ center: pos, bearing: brng, pitch: TOUR_PITCH, zoom: TOUR_ZOOM });
     map.getSource('marker').setData(pointGJ(pos));
-    highlightStep(activeStepAt(d));
+    highlightStep(activeStepAt(d), d);
     updateElevationCursor(d);
 
     if (d < state.totalDist) {
